@@ -1,0 +1,28 @@
+{
+  "name": "payflow_portal",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3319mvaseva-NEW/PayFlow_portal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/3319mvaseva-NEW/PayFlow_portal/issues"
+  },
+  "homepage": "https://github.com/3319mvaseva-NEW/PayFlow_portal#readme",
+  "devDependencies": {
+    "vite": "^8.1.3"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8"
+  }
+}

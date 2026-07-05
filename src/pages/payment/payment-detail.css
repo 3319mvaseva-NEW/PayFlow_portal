@@ -1,0 +1,16 @@
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.detail-label {
+  display: block;
+  color: #52606d;
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  color: #102a43;
+}

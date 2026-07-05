@@ -1,0 +1,10 @@
+.page-home {
+  min-height: 52vh;
+}
+
+.home-message {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #102a43;
+}

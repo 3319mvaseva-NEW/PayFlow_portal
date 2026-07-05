@@ -1,0 +1,6 @@
+.page-shell {
+  flex: 1;
+  background:
+    radial-gradient(circle at top left, rgba(16, 42, 67, 0.08), transparent 32%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}

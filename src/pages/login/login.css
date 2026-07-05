@@ -1,0 +1,21 @@
+.page-card {
+  border-radius: 1.5rem;
+}
+
+.page-eyebrow {
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  color: #486581;
+}
+
+.page-title {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 750;
+  color: #102a43;
+}
+
+.page-copy {
+  color: #52606d;
+}
