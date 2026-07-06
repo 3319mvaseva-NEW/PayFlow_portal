@@ -16,7 +16,29 @@ function isActiveLink(currentPath, href) {
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
-export function renderHeader(currentPath) {
+function renderAuthControl(authState) {
+  if (authState?.user) {
+    const email = authState.user.email ?? 'Signed in';
+
+    return `
+      <div class="auth-control d-none d-lg-flex align-items-center gap-2 ms-lg-3">
+        <span class="auth-chip"><i class="bi bi-person-circle"></i> ${email}</span>
+        <button class="btn btn-outline-secondary btn-sm px-3" type="button" data-auth-logout>Logout</button>
+      </div>
+      <div class="d-lg-none mt-3">
+        <button class="btn btn-outline-secondary w-100" type="button" data-auth-logout>Logout</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="auth-control d-none d-lg-flex align-items-center gap-2 ms-lg-3">
+      <span class="auth-chip auth-chip-muted"><i class="bi bi-shield-lock"></i> Guest</span>
+    </div>
+  `;
+}
+
+export function renderHeader(currentPath, authState) {
   return `
     <header class="navbar navbar-expand-lg navbar-dark app-header">
       <div class="container">
@@ -48,6 +70,7 @@ export function renderHeader(currentPath) {
                 `,
               )
               .join('')}
+            ${renderAuthControl(authState)}
           </nav>
         </div>
       </div>

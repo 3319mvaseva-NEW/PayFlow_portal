@@ -3,10 +3,10 @@ import { renderPageShell } from '../page-shell/page-shell.js';
 import { renderFooter } from '../footer/footer.js';
 import './layout.css';
 
-export function renderLayout({ currentPath, content }) {
+export function renderLayout({ currentPath, content, authState }) {
   return `
     <div class="app-shell">
-      ${renderHeader(currentPath)}
+      ${renderHeader(currentPath, authState)}
       ${renderPageShell(content)}
       ${renderFooter()}
     </div>

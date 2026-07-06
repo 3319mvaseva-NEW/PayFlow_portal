@@ -17,10 +17,9 @@ export function renderHome() {
           <div class="hero-copy panel-stack">
             <span class="hero-chip"><i class="bi bi-shield-check"></i> Secure document workflow</span>
             <p class="page-eyebrow text-start">PayFlow portal</p>
-            <h1 class="hero-title">Modern payment operations for contracts, vendors, and finance teams.</h1>
+            <h1 class="hero-title">Streamline vendor invoices and payment approvals</h1>
             <p class="hero-lead">
-              Streamline payment requests, track supporting documents, and keep vendor activity visible in one
-              clean workspace.
+              Submit invoice requests, attach supporting documents, and track payment statuses in real-time. Transparent financial workflow for vendors, clients, and admins.
             </p>
 
             <div class="hero-actions d-flex flex-column flex-sm-row gap-3">

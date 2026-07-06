@@ -6,10 +6,18 @@ import { renderNewPayment } from './pages/payment/new-payment.js';
 import { renderPaymentDetail } from './pages/payment/payment-detail.js';
 import { renderAdmin } from './pages/admin/admin.js';
 import { renderAdminPaymentDetail } from './pages/admin/admin-payment-detail.js';
+import {
+  getAuthState,
+  initializeAuthState,
+  signInWithEmailAndPassword,
+  signOutUser,
+  signUpWithEmailAndPassword,
+  subscribeToAuthState,
+} from './services/auth.js';
 
 const routes = [
   { path: '/', title: 'Home', render: () => renderHome() },
-  { path: '/login', title: 'Login', render: () => renderLogin() },
+  { path: '/login', title: 'Login', render: (context) => renderLogin(context) },
   { path: '/dashboard', title: 'Dashboard', render: () => renderDashboard() },
   { path: '/payment/new', title: 'New Payment', render: () => renderNewPayment() },
   {
@@ -82,18 +90,129 @@ function renderNotFound(pathname) {
   `;
 }
 
+function showAuthFeedback(message, type = 'success') {
+  const feedback = document.getElementById('authFeedback');
+
+  if (!feedback) {
+    return;
+  }
+
+  feedback.textContent = message;
+  feedback.classList.remove('d-none', 'is-error', 'is-success');
+  feedback.classList.add(type === 'error' ? 'is-error' : 'is-success');
+}
+
+function clearAuthFeedback() {
+  const feedback = document.getElementById('authFeedback');
+
+  if (!feedback) {
+    return;
+  }
+
+  feedback.textContent = '';
+  feedback.classList.add('d-none');
+  feedback.classList.remove('is-error', 'is-success');
+}
+
+function bindLoginPage(appRoot) {
+  const loginForm = appRoot.querySelector('#loginForm');
+  const registerForm = appRoot.querySelector('#registerForm');
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearAuthFeedback();
+
+      const email = loginForm.querySelector('#loginEmail').value.trim();
+      const password = loginForm.querySelector('#loginPassword').value;
+
+      try {
+        const { error } = await signInWithEmailAndPassword(email, password);
+
+        if (error) {
+          throw error;
+        }
+
+        navigate('/dashboard');
+      } catch (error) {
+        showAuthFeedback(error.message || 'Unable to sign in.', 'error');
+      }
+    });
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearAuthFeedback();
+
+      const email = registerForm.querySelector('#registerEmail').value.trim();
+      const password = registerForm.querySelector('#registerPassword').value;
+      const passwordConfirm = registerForm.querySelector('#registerPasswordConfirm').value;
+
+      if (password !== passwordConfirm) {
+        showAuthFeedback('Passwords do not match.', 'error');
+        return;
+      }
+
+      try {
+        const { data, error } = await signUpWithEmailAndPassword(email, password);
+
+        if (error) {
+          throw error;
+        }
+
+        const hasSession = Boolean(data?.session);
+
+        if (hasSession) {
+          navigate('/dashboard');
+          return;
+        }
+
+        showAuthFeedback('Registration completed. If confirmations are disabled, you can sign in immediately.', 'success');
+      } catch (error) {
+        showAuthFeedback(error.message || 'Unable to register.', 'error');
+      }
+    });
+  }
+}
+
+function bindLogout(appRoot) {
+  const logoutButtons = appRoot.querySelectorAll('[data-auth-logout]');
+
+  logoutButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        const { error } = await signOutUser();
+
+        if (error) {
+          throw error;
+        }
+
+        navigate('/');
+      } catch (error) {
+        showAuthFeedback(error.message || 'Unable to log out.', 'error');
+      }
+    });
+  });
+}
+
 function renderApplication(appRoot) {
   const currentMatch = matchRoute(window.location.pathname);
   const routeTitle = currentMatch ? currentMatch.route.title : 'Page not found';
+  const authState = getAuthState();
 
   document.title = `PayFlow Portal | ${routeTitle}`;
 
   appRoot.innerHTML = renderLayout({
     currentPath: normalizePath(window.location.pathname),
+    authState,
     content: currentMatch
-      ? currentMatch.route.render(currentMatch.params)
+      ? currentMatch.route.render({ ...currentMatch.params, authState })
       : renderNotFound(window.location.pathname),
   });
+
+  bindLoginPage(appRoot);
+  bindLogout(appRoot);
 }
 
 function navigate(pathname) {
@@ -123,10 +242,12 @@ function handleDocumentClick(event) {
 }
 
 export function startApp(appRoot) {
-  renderApplication(appRoot);
+  initializeAuthState().finally(() => renderApplication(appRoot));
 
   window.addEventListener('popstate', () => renderApplication(appRoot));
   document.addEventListener('click', handleDocumentClick);
+
+  subscribeToAuthState(() => renderApplication(appRoot));
 }
 
 export { navigate };
