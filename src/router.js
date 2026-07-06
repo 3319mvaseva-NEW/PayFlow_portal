@@ -196,19 +196,27 @@ function bindLogout(appRoot) {
   });
 }
 
-function renderApplication(appRoot) {
+// Turned into an async function to correctly resolve views that make network requests
+async function renderApplication(appRoot) {
   const currentMatch = matchRoute(window.location.pathname);
   const routeTitle = currentMatch ? currentMatch.route.title : 'Page not found';
   const authState = getAuthState();
 
   document.title = `PayFlow Portal | ${routeTitle}`;
 
+  // Evaluate the content template string dynamically whether it returns a Promise or an ordinary String
+  let contentHtml = '';
+  if (currentMatch) {
+    const renderResult = currentMatch.route.render({ ...currentMatch.params, authState });
+    contentHtml = renderResult instanceof Promise ? await renderResult : renderResult;
+  } else {
+    contentHtml = renderNotFound(window.location.pathname);
+  }
+
   appRoot.innerHTML = renderLayout({
     currentPath: normalizePath(window.location.pathname),
     authState,
-    content: currentMatch
-      ? currentMatch.route.render({ ...currentMatch.params, authState })
-      : renderNotFound(window.location.pathname),
+    content: contentHtml,
   });
 
   bindLoginPage(appRoot);
