@@ -7,10 +7,19 @@
 
 .detail-label {
   display: block;
-  color: #52606d;
+  color: rgba(147, 163, 184, 0.9);
   margin-bottom: 0.25rem;
 }
 
 .detail-value {
-  color: #102a43;
+  color: #f8fbff;
+}
+
+.detail-summary {
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(8, 16, 29, 0.55);
+  color: rgba(226, 232, 240, 0.82);
 }

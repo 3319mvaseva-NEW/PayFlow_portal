@@ -2,11 +2,25 @@ import './new-payment.css';
 
 export function renderNewPayment() {
   return `
-    <section class="card page-card shadow-sm border-0">
+    <section class="card page-card payment-form-card">
       <div class="card-body p-4 p-md-5">
         <p class="page-eyebrow">Payments</p>
         <h1 class="page-title">New payment request</h1>
         <p class="page-copy">Create a request and attach the supporting documentation.</p>
+        <div class="payment-form-meta">
+          <div class="meta-chip">
+            <span>Review lane</span>
+            <strong>Finance ops</strong>
+          </div>
+          <div class="meta-chip">
+            <span>Attachment policy</span>
+            <strong>Required</strong>
+          </div>
+          <div class="meta-chip">
+            <span>Target cycle</span>
+            <strong>Same day</strong>
+          </div>
+        </div>
         <form class="row g-3">
           <div class="col-12 col-md-6">
             <label class="form-label" for="paymentTitle">Request title</label>

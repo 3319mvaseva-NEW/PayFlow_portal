@@ -1,5 +1,12 @@
 .app-footer {
-  background: #0f172a;
-  color: rgba(255, 255, 255, 0.72);
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  background: linear-gradient(180deg, rgba(7, 14, 26, 0.92), rgba(5, 11, 20, 1));
+  color: rgba(226, 232, 240, 0.72);
   font-size: 0.95rem;
+}
+
+.footer-brand {
+  color: #f8fbff;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }

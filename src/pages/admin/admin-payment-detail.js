@@ -23,6 +23,9 @@ export function renderAdminPaymentDetail(id) {
           <button class="btn btn-warning px-4" type="button">Flag</button>
           <button class="btn btn-danger px-4" type="button">Reject</button>
         </div>
+        <div class="review-summary">
+          A compact audit trail, notes panel, and escalation history can sit here in the final admin view.
+        </div>
       </div>
     </section>
   `;

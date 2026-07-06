@@ -4,3 +4,27 @@
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
+
+.admin-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.admin-panel {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(8, 16, 29, 0.55);
+}
+
+.admin-panel span {
+  display: block;
+  color: rgba(147, 163, 184, 0.9);
+  font-size: 0.86rem;
+}
+
+.admin-panel strong {
+  color: #f8fbff;
+  font-size: 1.05rem;
+}

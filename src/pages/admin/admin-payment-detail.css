@@ -4,3 +4,12 @@
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
+
+.review-summary {
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(8, 16, 29, 0.55);
+  color: rgba(226, 232, 240, 0.82);
+}

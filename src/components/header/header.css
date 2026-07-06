@@ -1,11 +1,16 @@
 .app-header {
-  background: linear-gradient(135deg, #0b1220 0%, #102a43 100%);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(7, 14, 26, 0.8);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 14px 30px rgba(2, 8, 23, 0.28);
 }
 
 .app-header .navbar-brand,
 .app-header .nav-link {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(226, 232, 240, 0.86);
 }
 
 .app-header .nav-link.active,
@@ -14,11 +19,30 @@
   color: #ffffff;
 }
 
+.app-header .navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.03em;
+}
+
+.app-header .navbar-brand::before {
+  content: '';
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #60a5fa, #22c55e);
+  box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.14);
+}
+
 .app-header .nav-link {
   border-radius: 999px;
   padding-inline: 1rem;
+  font-weight: 600;
 }
 
 .app-header .nav-link.active {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(96, 165, 250, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }

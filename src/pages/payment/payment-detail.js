@@ -32,6 +32,9 @@ export function renderPaymentDetail(id) {
             <strong class="detail-value">Operations Team</strong>
           </div>
         </div>
+        <div class="detail-summary">
+          Payment routing, attachment validation, and contract reference details can be expanded here.
+        </div>
       </div>
     </section>
   `;
