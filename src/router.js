@@ -19,11 +19,11 @@ const routes = [
   { path: '/', title: 'Home', render: () => renderHome() },
   { path: '/login', title: 'Login', render: (context) => renderLogin(context) },
   { path: '/dashboard', title: 'Dashboard', render: () => renderDashboard() },
-  { path: '/payment/new', title: 'New Payment', render: () => renderNewPayment() },
+  { path: '/payment/new', title: 'New Payment', render: () => renderNewPayment() },  { path: '/payment/new', title: 'New Payment', render: async () => await renderNewPayment() },
   {
     path: '/payment/:id',
     title: 'Payment Details',
-    render: ({ id }) => renderPaymentDetail(id),
+    render: async ({ id }) => await renderPaymentDetail(id),
   },
   { path: '/admin', title: 'Admin', render: () => renderAdmin() },
   {
@@ -259,3 +259,47 @@ export function startApp(appRoot) {
 }
 
 export { navigate };
+
+import { supabase } from './services/supabase.js'; // Увери се, че пътят е верен
+
+function bindPaymentActions(appRoot) {
+  const form = appRoot.querySelector('#paymentRequestForm');
+  if (!form) return;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    
+    const feedback = appRoot.querySelector('#formFeedback');
+    const authState = getAuthState();
+    
+    if (!authState.user) {
+      feedback.textContent = "You must be logged in to submit a request.";
+      feedback.className = "alert alert-danger";
+      return;
+    }
+
+    const payload = {
+      user_id: authState.user.id,
+      contract_id: form.querySelector('#paymentContract').value,
+      invoice_number: form.querySelector('#invoiceNumber').value.trim(),
+      amount: parseFloat(form.querySelector('#paymentAmount').value),
+      currency: form.querySelector('#paymentCurrency').value.toUpperCase(),
+      description: form.querySelector('#paymentDescription').value.trim(),
+      status: 'pending' // Винаги тръгва като pending по условие
+    };
+
+    try {
+      const { error } = await supabase
+        .from('payment_requests')
+        .insert([payload]);
+
+      if (error) throw error;
+
+      // Успех! Навигираме към таблото
+      navigate('/dashboard');
+    } catch (err) {
+      feedback.textContent = err.message || "Error saving request.";
+      feedback.className = "alert alert-danger";
+    }
+  });
+}
