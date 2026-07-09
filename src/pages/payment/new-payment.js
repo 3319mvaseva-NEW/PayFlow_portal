@@ -9,21 +9,30 @@ export async function renderNewPayment() {
   let contractOptions = '<option value="">No active contracts found</option>';
 
   if (userId) {
-    // Временно използваме BluePeak ID за тест, докато направим профилната таблица в следващата стъпка
-    const userVendorId = authState.user?.user_metadata?.vendor_id 
-                         || 'a758468f-3111-48f8-a416-531876bdd9';
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('vendor_id')
+      .eq('id', userId)
+      .single();
 
-    const { data: contracts, error } = await supabase
-      .from('contracts')
-      .select('id, contract_number')
-      .eq('vendor_id', userVendorId);
+    if (!profileError && profile?.vendor_id) {
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id, contract_number')
+        .eq('vendor_id', profile.vendor_id);
 
-    if (!error && contracts && contracts.length > 0) {
-      contractOptions = contracts
-        .map(c => `<option value="${c.id}">Contract #${c.contract_number}</option>`)
-        .join('');
+      if (!contractsError && contracts && contracts.length > 0) {
+        contractOptions = contracts
+          .map(c => `<option value="${c.id}">Contract #${c.contract_number}</option>`)
+          .join('');
+      }
     }
   }
+
+  // Закачаме слушателя малко след като браузърът обработи низа (чрез setTimeout)
+  setTimeout(() => {
+    setupNewPaymentListeners(userId);
+  }, 0);
 
   return `
     <section class="card page-card payment-form-card">
@@ -65,4 +74,56 @@ export async function renderNewPayment() {
       </div>
     </section>
   `;
+}
+
+function setupNewPaymentListeners(userId) {
+  const form = document.getElementById('paymentRequestForm');
+  const feedback = document.getElementById('formFeedback');
+
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Спираме презареждането на браузъра
+
+    if (!userId) {
+      showFeedback('You must be logged in to submit a request.', 'danger');
+      return;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    const payload = {
+      user_id: userId,
+      contract_id: document.getElementById('paymentContract').value,
+      invoice_number: document.getElementById('invoiceNumber').value,
+      amount: parseFloat(document.getElementById('paymentAmount').value),
+      currency: document.getElementById('paymentCurrency').value.toUpperCase(),
+      description: document.getElementById('paymentDescription').value,
+      status: 'pending' // Начален статус за нова заявка
+    };
+
+    const { error } = await supabase
+      .from('payment_requests')
+      .insert([payload]);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save request';
+
+    if (error) {
+      console.error('Submission error:', error);
+      showFeedback(`Error: ${error.message}`, 'danger');
+    } else {
+      showFeedback('Payment request submitted successfully!', 'success');
+      form.reset();
+    }
+  });
+
+  function showFeedback(message, type) {
+    if (!feedback) return;
+    feedback.textContent = message;
+    feedback.className = `alert alert-${type} mb-3`;
+    feedback.classList.remove('d-none');
+  }
 }
