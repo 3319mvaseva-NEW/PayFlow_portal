@@ -26,3 +26,33 @@
   color: #f8fbff;
   font-size: 1.05rem;
 }
+/* Responsive дизайн за списъка със заявки */
+#pendingRequestsContainer .card {
+  transition: transform 0.2s;
+}
+
+#pendingRequestsContainer .card:hover {
+  border-color: #ffc107 !important; /* Жълт кант при посочване */
+}
+
+/* На мобилни устройства правим бутоните по-лесни за натискане */
+@media (max-width: 576px) {
+  .btn-sm {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .card-body {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+  
+  .d-flex.gap-2 {
+    width: 100%;
+  }
+  
+  .btn {
+    flex: 1; /* Бутоните заемат цялата ширина на реда */
+  }
+}
