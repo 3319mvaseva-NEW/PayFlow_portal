@@ -65,6 +65,12 @@ export async function renderNewPayment() {
             <label class="form-label" for="paymentDescription">Description / Notes</label>
             <textarea class="form-control" id="paymentDescription" rows="4" placeholder="Add details or context for the review team..."></textarea>
           </div>
+          
+          <div class="col-12">
+            <label class="form-label" for="fileInput">Attach Document (PDF, JPG, PNG - max 100KB)</label>
+            <input class="form-control bg-dark text-white border-secondary" id="fileInput" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+          </div>
+
           <div class="col-12 d-flex flex-wrap gap-2 mt-4">
             <button class="btn btn-primary px-4" type="submit" id="submitBtn">Save request</button>
             <button class="btn btn-outline-warning px-4 d-none" type="button" id="cancelBtn">Cancel Edit</button>
@@ -82,6 +88,7 @@ export async function renderNewPayment() {
 
 function setupNewPaymentListeners(userId) {
   const form = document.getElementById('paymentRequestForm');
+  const fileInput = document.getElementById('fileInput');
   const feedback = document.getElementById('formFeedback');
   const container = document.getElementById('pendingRequestsContainer');
   const submitBtn = document.getElementById('submitBtn');
@@ -109,6 +116,7 @@ function setupNewPaymentListeners(userId) {
           <div>
             <h6 class="mb-0">#${req.invoice_number} - ${req.amount} ${req.currency}</h6>
             <small class="text-secondary">Contract: ${req.contracts?.contract_number || 'N/A'}</small>
+            ${req.file_path ? `<br/><small class="text-info">📎 Document attached</small>` : ''}
           </div>
           <div class="d-flex gap-2">
             <button class="btn btn-sm btn-outline-warning edit-btn" data-id="${req.id}">Edit</button>
@@ -120,7 +128,7 @@ function setupNewPaymentListeners(userId) {
 
     container.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await supabase.from('payment_requests').delete().eq('id', btn.dataset.id);
+        await supabase.from('payment_requests').delete().eq('id', btn.dataset.id).eq('user_id', userId);
         loadPendingRequests();
       });
     });
@@ -129,7 +137,10 @@ function setupNewPaymentListeners(userId) {
       btn.addEventListener('click', () => {
         const req = pendingRequests.find(r => r.id === btn.dataset.id);
         editingId = req.id;
-        document.getElementById('paymentContract').value = req.contract_id;
+
+        const contractSelect = document.getElementById('paymentContract');
+        contractSelect.value = req.contract_id;
+
         document.getElementById('invoiceNumber').value = req.invoice_number;
         document.getElementById('paymentAmount').value = req.amount;
         document.getElementById('paymentCurrency').value = req.currency;
@@ -155,21 +166,45 @@ function setupNewPaymentListeners(userId) {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const file = fileInput.files[0];
+    let filePath = null;
+    let error = null;
+
+    if (file) {
+      if (file.size > 100 * 1024) {
+        showFeedback('File too large (max 100KB)', 'danger');
+        return;
+      }
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadErr } = await supabase.storage.from('payment-documents').upload(fileName, file);
+      
+      if (uploadErr) {
+        showFeedback(uploadErr.message, 'danger');
+        return;
+      }
+      filePath = fileName;
+    }
+
     const payload = {
-      user_id: userId,
       contract_id: document.getElementById('paymentContract').value,
       invoice_number: document.getElementById('invoiceNumber').value,
       amount: parseFloat(document.getElementById('paymentAmount').value),
       currency: document.getElementById('paymentCurrency').value.toUpperCase(),
       description: document.getElementById('paymentDescription').value,
-      status: 'pending'
+      status: 'pending',
+      ...(filePath && { file_path: filePath })
     };
 
-    let error;
     if (editingId) {
-      const { error: updErr } = await supabase.from('payment_requests').update(payload).eq('id', editingId);
+      const { error: updErr } = await supabase
+        .from('payment_requests')
+        .update(payload)
+        .eq('id', editingId)
+        .eq('user_id', userId); 
       error = updErr;
     } else {
+      payload.user_id = userId; 
       const { error: insErr } = await supabase.from('payment_requests').insert([payload]);
       error = insErr;
     }
@@ -177,7 +212,7 @@ function setupNewPaymentListeners(userId) {
     if (error) {
       showFeedback(`Error: ${error.message}`, 'danger');
     } else {
-      showFeedback(editingId ? 'Updated successfully!' : 'Submitted successfully!', 'success');
+      showFeedback('Saved successfully!', 'success');
       form.reset();
       cancelBtn.click();
       loadPendingRequests();
@@ -186,14 +221,9 @@ function setupNewPaymentListeners(userId) {
 
   function showFeedback(message, type) {
     if (!feedback) return;
-    
     feedback.textContent = message;
     feedback.className = `alert alert-${type} mb-3`;
     feedback.classList.remove('d-none');
-    
-    // Автоматично скриване след 3 секунди (3000 милисекунди)
-    setTimeout(() => {
-      feedback.classList.add('d-none');
-    }, 3000);
+    setTimeout(() => feedback.classList.add('d-none'), 3000);
   }
 }
