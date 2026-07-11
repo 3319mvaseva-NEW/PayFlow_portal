@@ -28,7 +28,6 @@ export async function renderNewPayment() {
         }
     }
 
-    // Извикваме слушателите веднага след като HTML е рендиран
     setTimeout(() => setupNewPaymentListeners(userId), 0);
 
     return `
@@ -62,7 +61,7 @@ export async function renderNewPayment() {
             <textarea class="form-control" id="paymentDescription" rows="4" placeholder="Add details or context for the review team..."></textarea>
           </div>
           <div class="col-12">
-            <label class="form-label" for="fileInput">Attach Document (max 100KB)</label>
+            <label class="form-label" for="fileInput">Attach Document (max 50KB. only one file allowed)</label>
             <input class="form-control bg-dark text-white border-secondary" id="fileInput" type="file" accept=".pdf,.jpg,.jpeg,.png" />
           </div>
           <div class="col-12 d-flex flex-wrap gap-2 mt-4">
@@ -91,69 +90,83 @@ function setupNewPaymentListeners(userId) {
     let editingId = null;
 
     async function loadPendingRequests() {
-    console.log("Зареждане за User ID:", userId); // 1. Виж в конзолата дали ID-то е правилно
+        const { data: pendingRequests, error } = await supabase
+            .from('payment_requests')
+            .select('*, contracts(contract_number)')
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false });
 
-    const { data: pendingRequests, error } = await supabase
-        .from('payment_requests')
-        .select('*, contracts(contract_number)')
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        if (error) {
+            container.innerHTML = '<p class="text-danger">Error loading data.</p>';
+            return;
+        }
 
-    if (error) {
-        console.error("Грешка при зареждане:", error);
-        container.innerHTML = '<p class="text-danger">Грешка при зареждане на данните.</p>';
-        return;
-    }
+        if (!pendingRequests || pendingRequests.length === 0) {
+            container.innerHTML = '<p class="text-secondary">No pending requests.</p>';
+            return;
+        }
 
-    console.log("Данни от Supabase:", pendingRequests); // 2. Тук ще видиш дали contracts идва като null
+        const requestCards = await Promise.all(pendingRequests.map(async (req) => {
+            const contractInfo = req.contracts ? `Contract: ${req.contracts.contract_number}` : `ID: ${req.contract_id}`;
+            let fileLink = '<small class="text-secondary">No file</small>';
+            
+            if (req.file_path) {
+                const { data } = await supabase.storage.from('payment-documents').createSignedUrl(req.file_path, 3600);
+                if (data?.signedUrl) {
+                    fileLink = `<a href="${data.signedUrl}" target="_blank" class="text-info">📎 View Attachment</a>`;
+                }
+            }
 
-    if (!pendingRequests || pendingRequests.length === 0) {
-        container.innerHTML = '<p class="text-secondary">No pending requests.</p>';
-        return;
-    }
-
-    container.innerHTML = pendingRequests.map(req => {
-        // 3. Дебъгване на визуализацията
-        const contractInfo = req.contracts ? `Contract: ${req.contracts.contract_number}` : `ID: ${req.contract_id} (Ненамерен договор)`;
-        
-        return `
-          <div class="card mb-2 bg-dark text-white border-secondary">
-            <div class="card-body d-flex justify-content-between align-items-center p-3">
-              <div>
-                <h6 class="mb-0">#${req.invoice_number} - ${req.amount} ${req.currency}</h6>
-                <small class="text-secondary">${contractInfo}</small>
+            return `
+              <div class="card mb-2 bg-dark text-white border-secondary">
+                <div class="card-body d-flex flex-column flex-md-row justify-content-between align-md-items-center p-3">
+                  <div class="mb-2 mb-md-0">
+                    <h6 class="mb-0">#${req.invoice_number} - ${req.amount} ${req.currency}</h6>
+                    <small class="text-secondary">${contractInfo} | ${fileLink}</small>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-warning edit-btn" data-id="${req.id}">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${req.id}">Delete</button>
+                  </div>
+                </div>
               </div>
-              <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-warning edit-btn" data-id="${req.id}">Edit</button>
-                <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${req.id}">Delete</button>
-              </div>
-            </div>
-          </div>
-        `;
-    }).join('');
-        
+            `;
+        }));
 
-        // Delete Logic
+        container.innerHTML = requestCards.join('');
+
         container.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
-                await supabase.from('payment_requests').delete().eq('id', btn.dataset.id).eq('user_id', userId);
+                const req = pendingRequests.find(r => r.id === btn.dataset.id);
+                if (req?.file_path) await supabase.storage.from('payment-documents').remove([req.file_path]);
+                await supabase.from('payment_requests').delete().eq('id', btn.dataset.id);
                 loadPendingRequests();
             });
         });
 
-        // Edit Logic
         container.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const req = pendingRequests.find(r => r.id === btn.dataset.id);
                 if (!req) return;
-                
                 editingId = req.id;
-                contractSelect.value = req.contract_id; // Вече ще работи, защото е в DOM
+                contractSelect.value = req.contract_id;
                 document.getElementById('invoiceNumber').value = req.invoice_number;
                 document.getElementById('paymentAmount').value = req.amount;
                 document.getElementById('paymentCurrency').value = req.currency;
                 document.getElementById('paymentDescription').value = req.description;
+                
+                const fileInputLabel = document.querySelector('label[for="fileInput"]');
+                if (req.file_path) {
+                    fileInputLabel.innerHTML = `Attach Document (max 50KB, only one file allowed) <div class="mt-2 p-2 bg-secondary rounded"><span>📎 Document (${req.file_path.split('.').pop().toUpperCase()})</span> <button type="button" class="btn btn-sm btn-danger ms-2" id="removeFileBtn">Remove</button></div>`;
+                    document.getElementById('removeFileBtn').addEventListener('click', async () => {
+                        await supabase.storage.from('payment-documents').remove([req.file_path]);
+                        await supabase.from('payment_requests').update({ file_path: null }).eq('id', req.id);
+                        loadPendingRequests();
+                    });
+                } else {
+                    fileInputLabel.innerHTML = `Attach Document (max 50KB, only one file allowed)`;
+                }
                 
                 formTitle.textContent = 'Edit payment request';
                 submitBtn.textContent = 'Update request';
@@ -169,15 +182,15 @@ function setupNewPaymentListeners(userId) {
         formTitle.textContent = 'New payment request';
         submitBtn.textContent = 'Save request';
         cancelBtn.classList.add('d-none');
+        document.querySelector('label[for="fileInput"]').innerHTML = `Attach Document (max 50KB, only one file allowed)`;
     });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const file = fileInput.files[0];
         let filePath = null;
-
         if (file) {
-            if (file.size > 100 * 1024) return showFeedback('File too large (max 100KB)', 'danger');
+            if (file.size > 50 * 1024) return showFeedback('File too large (max 50KB)', 'danger');
             const fileName = `${userId}/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
             const { error: uploadErr } = await supabase.storage.from('payment-documents').upload(fileName, file);
             if (uploadErr) return showFeedback(uploadErr.message, 'danger');
@@ -199,9 +212,8 @@ function setupNewPaymentListeners(userId) {
             ? await supabase.from('payment_requests').update(payload).eq('id', editingId)
             : await supabase.from('payment_requests').insert([payload]);
 
-        if (error) {
-            showFeedback(`Error: ${error.message}`, 'danger');
-        } else {
+        if (error) showFeedback(`Error: ${error.message}`, 'danger');
+        else {
             showFeedback(editingId ? 'Updated successfully!' : 'Submitted successfully!', 'success');
             form.reset();
             cancelBtn.click();
