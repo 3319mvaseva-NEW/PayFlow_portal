@@ -1,66 +1,211 @@
 import './admin.css';
-import { isAdmin, getPendingPayments } from './admin-service';
+import { supabase } from '../../services/supabase.js';
+import { 
+    isAdmin, 
+    getPendingPayments, 
+    createVendor, 
+    updatePaymentStatus, 
+    createContract, 
+    getVendors,
+    updateVendor 
+} from './admin-service';
+import Swal from 'sweetalert2';
+import { renderAdminPaymentDetail, initPaymentDetailLogic } from './admin-payment-detail.js';
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top',
+    showConfirmButton: false,
+    timer: 5000,
+    timerProgressBar: true,
+    background: '#1e293b',
+    color: '#fff',
+    customClass: { popup: 'colored-toast' },
+    didOpen: (toast) => {
+        toast.style.marginTop = '20px';
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
 
 export async function renderAdmin() {
-  // 1. Проверка на достъпа веднага при зареждане
-  const isAuthorized = await isAdmin();
-  
- if (!isAuthorized) {
+    const isAuthorized = await isAdmin();
+    if (!isAuthorized) {
+        return `
+            <section class="card page-card shadow-sm border-0">
+                <div class="card-body p-4 text-center">
+                    <h1 class="page-title">Access Denied</h1>
+                    <p class="page-copy">No access rights for this module.</p>
+                </div>
+            </section>
+        `;
+    }
+
     return `
-      <section class="card page-card shadow-sm border-0">
-        <div class="card-body p-4 text-center">
-          <h1 class="page-title">Access Denied</h1>
-          <p class="page-copy">Нямате администраторски права за достъп до този панел.</p>
-          <a href="/dashboard" data-app-link class="btn btn-primary">Назад към таблото</a>
-        </div>
-      </section>
+        <section class="card page-card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <p class="page-eyebrow">Administration</p>
+                <h1 class="page-title">Admin command center</h1>
+                <div class="admin-actions">
+                    <button class="btn btn-primary px-4" id="manageVendorsBtn">Manage Vendors</button>
+                    <button class="btn btn-secondary px-4" id="addContractBtn">Add New Contract</button>
+                    <button class="btn btn-outline-dark px-4" id="reviewQueueBtn">Review queue</button>
+                </div>
+                <div id="admin-content" class="mt-4"></div>
+            </div>
+        </section>
     `;
-  }
-
-  // 2. Рендиране на администраторския интерфейс
-  return `
-    <section class="card page-card shadow-sm border-0">
-      <div class="card-body p-4 p-md-5">
-        <p class="page-eyebrow">Administration</p>
-        <h1 class="page-title">Admin command center</h1>
-        <p class="page-copy">Управление на потребители, одобрения и работни процеси.</p>
-        
-        <div class="admin-actions">
-          <button class="btn btn-primary px-4" id="manageUsersBtn">Manage users</button>
-          <button class="btn btn-outline-dark px-4" id="reviewQueueBtn">Review queue</button>
-        </div>
-
-        <div class="admin-grid" id="adminStats">
-          <div class="admin-panel">
-            <span>System health</span>
-            <strong>All critical workflows online</strong>
-          </div>
-          <div class="admin-panel">
-            <span>Access review</span>
-            <strong id="pendingCount">Loading...</strong>
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
 }
 
-// 3. Логика след като елементите са в DOM (извиква се след рендиране)
 export function initAdminLogic() {
-  const pendingCountEl = document.getElementById('pendingCount');
-  
-  if (pendingCountEl) {
-    getPendingPayments().then(payments => {
-      pendingCountEl.textContent = `${payments.length} заявки чакат преглед`;
-    }).catch(err => {
-      console.error(err);
-      pendingCountEl.textContent = "Error";
-    });
-  }
+    document.getElementById('manageVendorsBtn')?.addEventListener('click', () => renderVendorManager());
+    
+    document.getElementById('addContractBtn')?.addEventListener('click', async () => {
+        const adminContent = document.getElementById('admin-content');
+        const vendors = await getVendors();
+        const vendorOptions = vendors.map(v => `<option value="${v.id}">${v.vendor_name}</option>`).join('');
 
-  // Тук можеш да добавиш event listeners за бутоните
-  document.getElementById('reviewQueueBtn')?.addEventListener('click', () => {
-    alert("Тук ще отворим списъка с чакащи заявки!");
-    // window.location.hash = '#/admin/queue';
-  });
+        adminContent.innerHTML = `
+        <div class="card p-3 bg-light border-0 shadow-sm">
+        <h5>Add New Contract</h5>
+        <select id="vendor-select" class="form-control mb-2">
+            <option value="">Select a vendor...</option>
+            ${vendorOptions}
+        </select>
+        <input type="text" id="contract-number" class="form-control mb-2" placeholder="Contract Number">
+        <input type="number" id="total-amount" class="form-control mb-2" placeholder="Total Amount">
+        <!-- Валутата е скрита и фиксирана, няма нужда от поле тук -->
+        <button id="saveContractBtn" class="btn btn-success">Save Contract ( in USD )</button>
+    </div>
+`;
+
+      document.getElementById('saveContractBtn').addEventListener('click', async () => {
+        const contractData = {
+        contract_number: document.getElementById('contract-number').value,
+        vendor_id: document.getElementById('vendor-select').value,
+        total_amount: parseFloat(document.getElementById('total-amount').value),
+        
+    };
+            try {
+                await createContract(contractData);
+                Toast.fire({ icon: 'success', title: 'Contract saved!' });
+            } catch (err) { Toast.fire({ icon: 'error', title: err.message }); }
+        });
+    });
+
+    document.getElementById('reviewQueueBtn')?.addEventListener('click', () => loadReviewQueue());
+}
+
+export async function renderVendorManager() {
+    const adminContent = document.getElementById('admin-content');
+    adminContent.innerHTML = `<p class="mt-3 text-light">Loading vendors...</p>`;
+    
+    try {
+        const vendors = await getVendors();
+        
+        // Рендираме таблицата с бутоните
+        adminContent.innerHTML = `
+            <div class="card p-3 shadow-sm border-0 bg-dark text-light">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Manage Vendors</h5>
+                    <button id="addVendorBtn" class="btn btn-sm btn-primary">+ Add New Vendor</button>
+                </div>
+                <table class="table table-dark table-hover">
+                    <thead><tr><th>Vendor Name</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        ${vendors.map(v => `
+                            <tr>
+                                <td>${v.vendor_name}</td>
+                                <td><button class="btn btn-sm btn-outline-info edit-vendor" data-id="${v.id}" data-name="${v.vendor_name}">Edit</button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        // 1. Слушател за ADD NEW
+        document.getElementById('addVendorBtn').addEventListener('click', () => showVendorModal());
+
+        // 2. Слушатели за EDIT
+        document.querySelectorAll('.edit-vendor').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const { id, name } = e.target.dataset;
+                showVendorModal(id, name);
+            });
+        });
+    } catch (err) {
+        adminContent.innerHTML = `<p class="mt-3 text-danger">Error: ${err.message}</p>`;
+    }
+}
+
+// Помощна функция за модалния прозорец
+async function showVendorModal(id = null, currentName = '') {
+    const { value: newName } = await Swal.fire({
+        title: id ? 'Edit Vendor' : 'Add New Vendor',
+        input: 'text',
+        inputLabel: 'Vendor Name',
+        inputValue: currentName,
+        showCancelButton: true,
+        confirmButtonText: id ? 'Update' : 'Add',
+        background: '#1e293b',
+        color: '#fff'
+    });
+
+    if (newName) {
+        try {
+            if (id) {
+                await updateVendor(id, newName); // Трябва да е добавена в admin-service.js
+            } else {
+                await createVendor(newName);
+            }
+            Toast.fire({ icon: 'success', title: 'Vendor saved successfully!' });
+            renderVendorManager(); // Презареждаме списъка
+        } catch (err) {
+            Toast.fire({ icon: 'error', title: 'Error: ' + err.message });
+        }
+    }
+}
+
+export async function loadReviewQueue() {
+    const adminContent = document.getElementById('admin-content');
+    adminContent.innerHTML = `<p class="mt-3 text-light">Loading...</p>`;
+    
+    try {
+        const payments = await getPendingPayments();
+        if (payments.length === 0) {
+            adminContent.innerHTML = `<p class="mt-3 text-light">No pending requests.</p>`;
+            return;
+        }
+
+        adminContent.innerHTML = `
+    <div class="card bg-dark border-0 shadow-sm" style="margin-top: 20px;">
+        <div class="card-body">
+            <table class="table table-dark table-hover mb-0">
+                <tbody>
+                    ${payments.map(p => `
+                        <tr>
+                            <td>${p.invoice_number}</td>
+                            <td><span class="badge bg-warning">${p.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info view-btn" data-id="${p.id}">View</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>
+`;
+
+        // Тук е ключът: добавяме слушател за View бутоните
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.target.dataset.id;
+                // Рендираме детайлите
+                adminContent.innerHTML = await renderAdminPaymentDetail(id);
+                // Инициализираме бутоните вътре (Approve/Reject)
+                initPaymentDetailLogic(id);
+            });
+        });
+    } catch (err) { Toast.fire({ icon: 'error', title: err.message }); }
 }

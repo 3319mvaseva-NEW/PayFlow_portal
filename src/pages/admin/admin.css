@@ -28,3 +28,67 @@
   color: #f8fbff;
   font-size: 1.05rem;
 }
+/* Премахване на белия фон на таблицата */
+.table {
+    background-color: transparent !important;
+    color: #ffffff !important;
+}
+
+/* Стил за редовете - премахваме белия фон и правим текста бял */
+.table tbody tr {
+    background-color: rgba(255, 255, 255, 0.05) !important; /* Леко прозрачен тъмен фон */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Премахване на ефекта на редуване (zebra striping), ако го има */
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Стил за хедъра на таблицата */
+.table thead th {
+    color: #94a3b8 !important; /* Сивкав цвят за заглавията */
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+/* Принудително изчистване на стиловете на Bootstrap за таблицата */
+.table-light {
+    --bs-table-bg: transparent !important;
+    --bs-table-color: #94a3b8 !important; /* Същият сив цвят за текста */
+    background-color: transparent !important;
+}
+
+/* Изчистване на фоновете по подразбиране */
+.table > :not(caption) > * > * {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+/* Ако все още има бяла лента отгоре на таблицата */
+.table thead {
+    background-color: transparent !important;
+}
+/* Разстояние под бутоните */
+.admin-actions {
+    margin-bottom: 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 20px;
+}
+
+/* Компактна таблица */
+.table {
+    font-size: 0.9rem; /* По-малък размер на текста */
+    margin-top: 10px;
+}
+
+/* Намаляване на височината на редовете */
+.table td, .table th {
+    padding: 0.5rem 1rem !important;
+    vertical-align: middle;
+}
+
+/* Оформяне на "View" бутона */
+.view-btn {
+    padding: 0.2rem 0.6rem !important;
+    font-size: 0.8rem !important;
+}
