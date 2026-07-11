@@ -5,6 +5,7 @@ import { renderDashboard } from './pages/dashboard/dashboard.js';
 import { renderNewPayment } from './pages/payment/new-payment.js';
 import { renderPaymentDetail } from './pages/payment/payment-detail.js';
 import { renderAdmin } from './pages/admin/admin.js';
+import { initAdminLogic } from './pages/admin/admin.js';
 import { renderAdminPaymentDetail } from './pages/admin/admin-payment-detail.js';
 import {
   getAuthState,
@@ -218,7 +219,9 @@ async function renderApplication(appRoot) {
     authState,
     content: contentHtml,
   });
-
+if (currentMatch?.route.path === '/admin') {
+    initAdminLogic();
+  }
   bindLoginPage(appRoot);
   bindLogout(appRoot);
 }
