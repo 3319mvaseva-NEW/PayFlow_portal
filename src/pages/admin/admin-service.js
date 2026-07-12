@@ -87,9 +87,16 @@ export async function assignUserToVendor(userId, vendorId) {
   const { data, error } = await supabase
     .from('user_profiles')
     .update({ vendor_id: vendorId })
-    .eq('id', userId);
+    .eq('id', userId)
+    .select(); // <--- ВАЖНО: Добавяме това!
 
   if (error) throw error;
+  
+  // Ако RLS блокира промяната, data ще бъде празен масив []
+  if (!data || data.length === 0) {
+      throw new Error("Update blocked by RLS policies.");
+  }
+
   return data;
 }
 
@@ -112,7 +119,21 @@ export async function getVendors() {
     if (error) throw error;
     return data;
 }
+/**
+ * Взима потребители, които все още нямат назначен вендор
+ */
+export async function getUnassignedUsers() {
+  // Взимаме всички профили без вендор
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, email') // Тук взимаме само ID-то и имейла
+    .is('vendor_id', null)
+    .eq('role', 'user');
 
+  if (error) throw error;
+  
+  return data;
+}
 /**
  * Редактира съществуващ вендор
  */
