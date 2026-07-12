@@ -110,3 +110,26 @@
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
+
+.login-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Това ще центрира картата под формата */
+}
+#register-notice {
+    margin-top: 0.5rem;
+    padding: 0rem;
+    text-align: center;
+    color: rgba(147, 197, 253, 0.8); /* Блед син цвят */
+    font-size: 0.8rem;
+    font-style: italic; /* За да изглежда като фин детайл */
+    opacity: 0.9; /* Леко избледняване за още по-фино присъствие */
+}
+
+/* Оптимизация за мобилни устройства */
+@media (max-width: 576px) {
+    #register-notice {
+        margin-top: 1rem;
+        padding: 0.8rem;
+    }
+}

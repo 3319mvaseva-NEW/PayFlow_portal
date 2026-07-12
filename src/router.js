@@ -18,9 +18,9 @@ import {
 
 const routes = [
   { path: '/', title: 'Home', render: () => renderHome() },
-  { path: '/login', title: 'Login', render: (context) => renderLogin(context) },
+  { path: '/login', title: 'Login', render: (context) => { const html = renderLogin(context); return html; } },
   { path: '/dashboard', title: 'Dashboard', render: () => renderDashboard() },
-  { path: '/payment/new', title: 'New Payment', render: () => renderNewPayment() },  { path: '/payment/new', title: 'New Payment', render: async () => await renderNewPayment() },
+  { path: '/payment/new', title: 'New Payment', render: async () => await renderNewPayment() },
   {
     path: '/payment/:id',
     title: 'Payment Details',
@@ -118,7 +118,22 @@ function clearAuthFeedback() {
 function bindLoginPage(appRoot) {
   const loginForm = appRoot.querySelector('#loginForm');
   const registerForm = appRoot.querySelector('#registerForm');
+  const registerNotice = appRoot.querySelector('#register-notice');
+  const registerTabBtn = appRoot.querySelector('button[data-bs-target="#registerPane"]');
+  const loginTabBtn = appRoot.querySelector('button[data-bs-target="#loginPane"]');
 
+  if (registerTabBtn) {
+    registerTabBtn.addEventListener('click', () => {
+      if (registerNotice) registerNotice.style.display = 'block';
+    });
+  }
+
+  if (loginTabBtn) {
+    loginTabBtn.addEventListener('click', () => {
+      if (registerNotice) registerNotice.style.display = 'none';
+    });
+  }
+  
   if (loginForm) {
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();

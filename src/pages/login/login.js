@@ -1,4 +1,5 @@
 import './login.css';
+import Swal from 'sweetalert2';
 
 export function renderLogin({ authState } = {}) {
   const currentEmail = authState?.user?.email ?? '';
@@ -12,6 +13,11 @@ export function renderLogin({ authState } = {}) {
               <p class="page-eyebrow">Account access</p>
               <h1 class="page-title">Login or create your account</h1>
               <p class="page-copy mb-0">Sign in to review payment requests, contract milestones, and vendor activity.</p>
+             
+              <div id="register-notice" style="display: none; margin-top: 1rem; font-size: 0.85rem; color: #93c5fd; font-style: italic;">
+                    ℹ️ All new registrations are subject to administrative review. You will be notified via email upon account approval.
+              </div>
+              
             </div>
             ${
               authState?.user
@@ -64,16 +70,25 @@ export function renderLogin({ authState } = {}) {
                       <input class="form-control" id="registerPasswordConfirm" type="password" minlength="8" placeholder="Repeat password" required />
                     </div>
                     <div class="col-12 d-grid d-sm-flex gap-2">
-                      <button class="btn btn-primary px-4" type="submit">Create account</button>
+                      <button class="btn btn-primary px-4" type="submit">Create</button>
                       <button class="btn btn-outline-secondary px-4" type="reset">Clear</button>
                     </div>
+                          
                   </form>
+ 
                 </div>
+
               </div>
-            </div>
-          </div>
+             
+             </div>
+             
+           </div>
+              
         </div>
+
       </div>
+             
     </section>
   `;
-}
+              
+ }
